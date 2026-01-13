@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Live Top Stock Gainers • Powered by FMP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      background-attachment: fixed;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 2.5rem; }
+    h1 {
+      font-size: 2.6rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #60a5fa, #a5b4fc, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle { color: #94a3b8; font-size: 1.1rem; }
+    .card {
+      background: rgba(30,41,59,0.65);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 12px 35px -15px rgba(0,0,0,0.6);
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 1.2rem 1.3rem; text-align: left; vertical-align: middle; }
+    th {
+      background: rgba(15,23,42,0.75);
+      color: #cbd5e1;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    tr { transition: all 0.25s ease; }
+    tr:hover { background: rgba(59,69,94,0.45); transform: translateY(-2px); }
+    .ticker-company { font-weight: 600; }
+    .ticker { color: #60a5fa; display: block; font-size: 1.1rem; }
+    .company { color: #94a3b8; font-size: 0.9rem; }
+    .change-positive { color: #34d399; font-weight: 700; }
+    .sparkline-cell { width: 140px; text-align: right; }
+    .sparkline-svg { width: 120px; height: 40px; }
+    .loading { text-align: center; padding: 3rem; color: #94a3b8; font-size: 1.2rem; }
+    .error { color: #f87171; text-align: center; padding: 2rem; }
+    .disclaimer {
+      margin-top: 2.5rem;
+      text-align: center;
+      color: #64748b;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    @media (max-width: 640px) {
+      h1 { font-size: 2.1rem; }
+      th, td { padding: 1rem 0.9rem; font-size: 0.95rem; }
+      .sparkline-cell { width: 100px; }
+      .sparkline-svg { width: 90px; height: 35px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Live Top Stock Gainers</h1>
+      <div class="subtitle">January 12, 2026 • Powered by Financial Modeling Prep • Real-time data</div>
+    </header>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Stock</th>
+            <th>Change (%)</th>
+            <th>Price ($)</th>
+            <th>Change ($)</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody id="gainersTable">
+          <tr><td colspan="5" class="loading">Loading live top gainers...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="disclaimer">
+      Live data from Financial Modeling Prep (free tier).<br>
+      NOT investment advice — big movers = high risk/volatility.<br>
+      Always do your own research and consider a financial advisor.
+    </div>
+  </div>
+
+  <script>
+    const API_KEY = '0HnyOkY4Ln2n4dacdrIoYG0MuGtZbkG5';
+    const API_URL = `https://financialmodelingprep.com/api/v3/stable/biggest-gainers?apikey=${API_KEY}`;
+
+    async function fetchGainers() {
+      const tableBody = document.getElementById('gainersTable');
+      tableBody.innerHTML = '<tr><td colspan="5" class="loading">Fetching live top gainers...</td></tr>';
+
+      try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error(`Status ${response.status}`);
+        
+        const gainers = await response.json();
+
+        if (!Array.isArray(gainers) || gainers.length === 0) {
+          tableBody.innerHTML = '<tr><td colspan="5" class="error">No gainers data right now.</td></tr>';
+          return;
+        }
+
+        tableBody.innerHTML = '';
+
+        gainers.slice(0, 10).forEach(stock => {
+          const changePct = parseFloat(stock.changesPercentage) || 0;
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="ticker-company">
+              <span class="ticker">${stock.ticker}</span>
+              <span class="company">${stock.companyName}</span>
+            </td>
+            <td class="change-positive">+${changePct.toFixed(2)}%</td>
+            <td>${parseFloat(stock.price).toFixed(2)}</td>
+            <td>+${parseFloat(stock.change).toFixed(2)}</td>
+            <td class="sparkline-cell">
+              <svg class="sparkline-svg" viewBox="0 0 100 30" preserveAspectRatio="none">
+                <polyline points="0,25 20,18 40,10 60,15 80,5 100,0" fill="none" stroke="#34d399" stroke-width="2" />
+              </svg>
+            </td>
+          `;
+          tableBody.appendChild(row);
+        });
+
+      } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="5" class="error">Error: ${err.message}</td></tr>`;
+      }
+    }
+
+    fetchGainers();
+
+    // Optional: auto-refresh every 2 minutes
+    // setInterval(fetchGainers, 120000);
+  </script>
+</body>
+</html>
