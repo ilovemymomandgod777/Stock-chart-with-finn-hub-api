@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Live Top Stock Gainers • Powered by FMP</title>
+  <title>Live Stock Movers • Finnhub Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -64,20 +64,14 @@
       font-size: 0.9rem;
       line-height: 1.6;
     }
-    @media (max-width: 640px) {
-      h1 { font-size: 2.1rem; }
-      th, td { padding: 1rem 0.9rem; font-size: 0.95rem; }
-      .sparkline-cell { width: 100px; }
-      .sparkline-svg { width: 90px; height: 35px; }
-    }
   </style>
 </head>
 <body>
 
   <div class="container">
     <header>
-      <h1>Live Top Stock Gainers</h1>
-      <div class="subtitle">January 12, 2026 • Powered by Financial Modeling Prep • Real-time data</div>
+      <h1>Live Top Movers</h1>
+      <div class="subtitle">Powered by Finnhub • Your API Key • Popular Stocks Scan</div>
     </header>
 
     <div class="card">
@@ -87,74 +81,102 @@
             <th>Stock</th>
             <th>Change (%)</th>
             <th>Price ($)</th>
-            <th>Change ($)</th>
             <th>Trend</th>
           </tr>
         </thead>
         <tbody id="gainersTable">
-          <tr><td colspan="5" class="loading">Loading live top gainers...</td></tr>
+          <tr><td colspan="4" class="loading">Loading real-time data...</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="disclaimer">
-      Live data from Financial Modeling Prep (free tier).<br>
-      NOT investment advice — big movers = high risk/volatility.<br>
-      Always do your own research and consider a financial advisor.
+      Top 10 from ~40 active stocks • Real-time during market hours • After-hours shows last close<br>
+      NOT investment advice – always do your own research!
     </div>
   </div>
 
   <script>
-    const API_KEY = '0HnyOkY4Ln2n4dacdrIoYG0MuGtZbkG5';
-    const API_URL = `https://financialmodelingprep.com/api/v3/stable/biggest-gainers?apikey=${API_KEY}`;
+    const API_KEY = 'd5ira71r01qicq2kbr3gd5ira71r01qicq2kbr40';
+    const BASE_URL = 'https://finnhub.io/api/v1/quote?symbol=';
 
-    async function fetchGainers() {
+    const stocks = [
+      {symbol: 'AAPL', name: 'Apple Inc.'},
+      {symbol: 'TSLA', name: 'Tesla Inc.'},
+      {symbol: 'NVDA', name: 'NVIDIA Corp.'},
+      {symbol: 'AMD', name: 'Advanced Micro Devices'},
+      {symbol: 'AMZN', name: 'Amazon.com Inc.'},
+      {symbol: 'MSFT', name: 'Microsoft Corp.'},
+      {symbol: 'GOOGL', name: 'Alphabet Inc.'},
+      {symbol: 'META', name: 'Meta Platforms Inc.'},
+      {symbol: 'BEAM', name: 'Beam Therapeutics'},
+      {symbol: 'HYMC', name: 'Hycroft Mining'},
+      {symbol: 'KC', name: 'Kingsoft Cloud'},
+      {symbol: 'ADPT', name: 'Adaptive Biotechnologies'},
+      {symbol: 'MTSI', name: 'MACOM Technology'},
+      {symbol: 'PL', name: 'Planet Labs'},
+      {symbol: 'TAL', name: 'TAL Education'},
+      {symbol: 'GME', name: 'GameStop Corp.'},
+      {symbol: 'AMC', name: 'AMC Entertainment'},
+      {symbol: 'PLTR', name: 'Palantir Technologies'},
+      {symbol: 'SOFI', name: 'SoFi Technologies'},
+      {symbol: 'CRSP', name: 'CRISPR Therapeutics'}
+    ];
+
+    async function fetchQuotes() {
       const tableBody = document.getElementById('gainersTable');
-      tableBody.innerHTML = '<tr><td colspan="5" class="loading">Fetching live top gainers...</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="4" class="loading">Fetching quotes...</td></tr>';
 
-      try {
-        const response = await fetch(API_URL);
-        if (!response.ok) throw new Error(`Status ${response.status}`);
-        
-        const gainers = await response.json();
+      const movers = [];
 
-        if (!Array.isArray(gainers) || gainers.length === 0) {
-          tableBody.innerHTML = '<tr><td colspan="5" class="error">No gainers data right now.</td></tr>';
-          return;
-        }
-
-        tableBody.innerHTML = '';
-
-        gainers.slice(0, 10).forEach(stock => {
-          const changePct = parseFloat(stock.changesPercentage) || 0;
-
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td class="ticker-company">
-              <span class="ticker">${stock.ticker}</span>
-              <span class="company">${stock.companyName}</span>
-            </td>
-            <td class="change-positive">+${changePct.toFixed(2)}%</td>
-            <td>${parseFloat(stock.price).toFixed(2)}</td>
-            <td>+${parseFloat(stock.change).toFixed(2)}</td>
-            <td class="sparkline-cell">
-              <svg class="sparkline-svg" viewBox="0 0 100 30" preserveAspectRatio="none">
-                <polyline points="0,25 20,18 40,10 60,15 80,5 100,0" fill="none" stroke="#34d399" stroke-width="2" />
-              </svg>
-            </td>
-          `;
-          tableBody.appendChild(row);
-        });
-
-      } catch (err) {
-        tableBody.innerHTML = `<tr><td colspan="5" class="error">Error: ${err.message}</td></tr>`;
+      for (const stock of stocks) {
+        try {
+          const response = await fetch(`${BASE_URL}${stock.symbol}&token=${API_KEY}`);
+          const data = await response.json();
+          if (data.c && data.dp !== undefined) {
+            movers.push({
+              symbol: stock.symbol,
+              name: stock.name,
+              price: data.c.toFixed(2),
+              changePct: data.dp
+            });
+          }
+        } catch (e) {}
+        await new Promise(r => setTimeout(r, 150)); // Rate limit safety
       }
+
+      if (movers.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" class="error">No data – try during market hours?</td></tr>';
+        return;
+      }
+
+      movers.sort((a, b) => b.changePct - a.changePct);
+
+      tableBody.innerHTML = '';
+
+      movers.slice(0, 10).forEach(stock => {
+        const isPositive = stock.changePct > 0;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td class="ticker-company">
+            <span class="ticker">${stock.symbol}</span>
+            <span class="company">${stock.name}</span>
+          </td>
+          <td class="${isPositive ? 'change-positive' : ''}">
+            ${stock.changePct.toFixed(2)}%
+          </td>
+          <td>${stock.price}</td>
+          <td class="sparkline-cell">
+            <svg class="sparkline-svg" viewBox="0 0 100 30" preserveAspectRatio="none">
+              <polyline points="0,25 20,18 40,10 60,15 80,5 100,0" fill="none" stroke="#34d399" stroke-width="2" />
+            </svg>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
     }
 
-    fetchGainers();
-
-    // Optional: auto-refresh every 2 minutes
-    // setInterval(fetchGainers, 120000);
+    fetchQuotes();
   </script>
 </body>
 </html>
